@@ -29,6 +29,9 @@ export default function ScrollReveal({
     const el = ref.current;
     if (!el) return;
 
+    // Fallback: ensure visible after a short delay so content never stays hidden
+    const fallback = setTimeout(() => setVisible(true), 150);
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (!entry.isIntersecting) return;
@@ -39,7 +42,10 @@ export default function ScrollReveal({
     );
 
     observer.observe(el);
-    return () => observer.disconnect();
+    return () => {
+      clearTimeout(fallback);
+      observer.disconnect();
+    };
   }, [rootMargin, threshold, once]);
 
   const revealClass = stagger ? "scroll-reveal-stagger" : "scroll-reveal";

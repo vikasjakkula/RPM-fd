@@ -1,29 +1,20 @@
 import React, { useState } from "react";
-import { Stethoscope } from "lucide-react";
+import { Stethoscope, Calculator, ChevronRight } from "lucide-react";
 import { api } from "../api";
+import { useLoading } from "../components/Layout";
 
 function Predict() {
   const [form, setForm] = useState({
-    name: "",
-    age: "",
-    sex: "",
-    cholesterol: "",
-    bp: "",
-    fbs: false,
-    thalachh: "",
-    diabetes: false,
-    obesity: false,
-    shortness_of_breath: false,
-    chest_pain: false,
-    sweating: false,
-    stress: false,
-    poor_sleep: false,
-    smoking: false,
+    name: "", age: "", sex: "", cholesterol: "", bp: "",
+    fbs: false, thalachh: "", diabetes: false, obesity: false,
+    shortness_of_breath: false, chest_pain: false, sweating: false,
+    stress: false, poor_sleep: false, smoking: false,
   });
 
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const { setGlobalLoading } = useLoading();
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -36,6 +27,7 @@ function Predict() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setGlobalLoading(true); // Central loader
     setResult(null);
     setError(null);
     try {
@@ -43,312 +35,178 @@ function Predict() {
       setResult(data);
     } catch (err) {
       setError(err.message || "Failed to fetch prediction.");
+    } finally {
+      setLoading(false);
+      setGlobalLoading(false);
     }
-    setLoading(false);
   };
 
   return (
-    <div className="predict-page">
-      <div className="container">
-        <div className="predict-content">
-          <h1
-            className="predict-title"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "0.5rem",
-            }}
-          >
+    <div className="page-panel">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-12 text-center">
+          <div className="w-16 h-16 bg-blue-500/10 text-blue-400 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <Stethoscope size={32} />
-            Heart Attack Risk Factors
-          </h1>
-          <form className="predict-form" onSubmit={handleSubmit}>
-            <fieldset className="form-section">
-              <legend>Report Information</legend>
-              <div className="form-group">
-                <label>
-                  Name
-                  <input
-                    type="text"
-                    name="name"
-                    value={form.name || ""}
-                    onChange={handleChange}
-                    required
-                  />
-                </label>
-              </div>
-              <div className="form-group">
-                <label>
-                  Age
-                  <input
-                    type="number"
-                    name="age"
-                    value={form.age || ""}
-                    onChange={handleChange}
-                    min="0"
-                    required
-                  />
-                </label>
-              </div>
-              <div className="form-group">
-                <label>
-                  Sex
-                  <select
-                    name="sex"
-                    value={form.sex || ""}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="">Select</option>
-                    <option value="1">Male</option>
-                    <option value="0">Female</option>
-                  </select>
-                </label>
-              </div>
-            </fieldset>
+          </div>
+          <h1 className="text-4xl font-bold text-white mb-4">Risk Assessment</h1>
+          <p className="text-gray-400">Complete the form below for a comprehensive Heart Attack risk analysis.</p>
+        </div>
 
-            <fieldset className="form-section">
-              <legend>Clinical Measurements</legend>
-              <div className="form-group">
-                <label>
-                  Cholesterol (mg/dL)
+        <form onSubmit={handleSubmit} className="space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="glass-card">
+              <h3 className="text-lg font-semibold text-white mb-6">Patient Profile</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Full Name</label>
                   <input
-                    type="number"
-                    name="cholesterol"
-                    value={form.cholesterol}
-                    onChange={handleChange}
-                    min="0"
-                    required
+                    type="text" name="name" value={form.name} onChange={handleChange} required
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-blue-500/50 transition-all"
+                    placeholder="e.g. John Doe"
                   />
-                </label>
-              </div>
-              <div className="form-group">
-                <label>
-                  Blood Pressure (mmHg)
-                  <input
-                    type="number"
-                    name="bp"
-                    value={form.bp}
-                    onChange={handleChange}
-                    min="0"
-                    required
-                  />
-                </label>
-              </div>
-              <div className="form-group">
-                <label>
-                  Resting Blood Sugar &gt; 120mg/dl
-                  <input
-                    type="checkbox"
-                    name="fbs"
-                    checked={form.fbs || false}
-                    onChange={handleChange}
-                  />
-                </label>
-              </div>
-              <div className="form-group">
-                <label>
-                  Max Heart Rate Achieved
-                  <input
-                    type="number"
-                    name="thalachh"
-                    value={form.thalachh || ""}
-                    onChange={handleChange}
-                  />
-                </label>
-              </div>
-            </fieldset>
-
-            <fieldset className="form-section">
-              <legend>Symptoms & Risk Factors</legend>
-              <div className="form-group checkbox-group">
-                <label>
-                  <input
-                    type="checkbox"
-                    name="diabetes"
-                    checked={form.diabetes}
-                    onChange={handleChange}
-                  />
-                  Diabetes
-                </label>
-                <label>
-                  <input
-                    type="checkbox"
-                    name="obesity"
-                    checked={form.obesity}
-                    onChange={handleChange}
-                  />
-                  Obesity
-                </label>
-                <label>
-                  <input
-                    type="checkbox"
-                    name="shortness_of_breath"
-                    checked={form.shortness_of_breath}
-                    onChange={handleChange}
-                  />
-                  Shortness of breath
-                </label>
-                <label>
-                  <input
-                    type="checkbox"
-                    name="chest_pain"
-                    checked={form.chest_pain}
-                    onChange={handleChange}
-                  />
-                  Chest pain
-                </label>
-                <label>
-                  <input
-                    type="checkbox"
-                    name="sweating"
-                    checked={form.sweating}
-                    onChange={handleChange}
-                  />
-                  Sweating
-                </label>
-                <label>
-                  <input
-                    type="checkbox"
-                    name="stress"
-                    checked={form.stress}
-                    onChange={handleChange}
-                  />
-                  Stress
-                </label>
-                <label>
-                  <input
-                    type="checkbox"
-                    name="poor_sleep"
-                    checked={form.poor_sleep}
-                    onChange={handleChange}
-                  />
-                  Poor sleep
-                </label>
-                <label>
-                  <input
-                    type="checkbox"
-                    name="smoking"
-                    checked={form.smoking}
-                    onChange={handleChange}
-                  />
-                  Smoking
-                </label>
-              </div>
-            </fieldset>
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                marginTop: "1.5rem",
-              }}
-            >
-              <button
-                className="btn btn-primary"
-                type="submit"
-                disabled={loading}
-              >
-                {loading ? (
-                  <span
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.5rem",
-                    }}
-                  >
-                    <span className="button-spinner"></span>
-                    Calculating...
-                  </span>
-                ) : (
-                  "Predict Heart Attack Risk"
-                )}
-              </button>
-            </div>
-          </form>
-
-          <div className="predict-output">
-            {loading && (
-              <div className="loading-container">
-                <div className="spinner"></div>
-                <p className="loading-text">Analyzing your data...</p>
-              </div>
-            )}
-            {result !== null && (
-              <div className="result-card">
-                <h2>Prediction Results</h2>
-                {form.name && (
-                  <p style={{ fontSize: "1.1rem", marginBottom: "1rem" }}>
-                    <strong>{form.name}</strong>
-                  </p>
-                )}
-                <div style={{ marginBottom: "1rem" }}>
-                  <p>
-                    <strong>Health Status:</strong>{" "}
-                    <span
-                      style={{
-                        color:
-                          result.health_status === "High Risk"
-                            ? "#dc3545"
-                            : "#28a745",
-                        fontWeight: "bold",
-                        fontSize: "1.2rem",
-                      }}
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Age</label>
+                    <input
+                      type="number" name="age" value={form.age} onChange={handleChange} required
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-blue-500/50 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Sex</label>
+                    <select
+                      name="sex" value={form.sex} onChange={handleChange} required
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-blue-500/50 transition-all"
                     >
+                      <option value="" className="bg-gray-900">Select</option>
+                      <option value="1" className="bg-gray-900">Male</option>
+                      <option value="0" className="bg-gray-900">Female</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="glass-card">
+              <h3 className="text-lg font-semibold text-white mb-6">Clinical Metrics</h3>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Cholesterol</label>
+                    <input
+                      type="number" name="cholesterol" value={form.cholesterol} onChange={handleChange} required
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-blue-500/50 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Blood Pressure</label>
+                    <input
+                      type="number" name="bp" value={form.bp} onChange={handleChange} required
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-blue-500/50 transition-all"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Max Heart Rate</label>
+                  <input
+                    type="number" name="thalachh" value={form.thalachh} onChange={handleChange}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-blue-500/50 transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="glass-card">
+            <h3 className="text-lg font-semibold text-white mb-6">Symptoms & Habits</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {[
+                { name: "diabetes", label: "Diabetes" },
+                { name: "obesity", label: "Obesity" },
+                { name: "smoking", label: "Smoker" },
+                { name: "chest_pain", label: "Chest Pain" },
+                { name: "shortness_of_breath", label: "Dyspnea" },
+                { name: "sweating", label: "Sweating" },
+                { name: "stress", label: "High Stress" },
+                { name: "poor_sleep", label: "Poor Sleep" },
+              ].map((item) => (
+                <label key={item.name} className={`flex items-center gap-3 p-4 rounded-xl border transition-all cursor-pointer ${form[item.name] ? 'bg-blue-500/10 border-blue-500/40 text-blue-400' : 'bg-white/5 border-white/5 text-gray-400 hover:border-white/10'}`}>
+                  <input
+                    type="checkbox" name={item.name} checked={form[item.name]} onChange={handleChange}
+                    className="hidden"
+                  />
+                  <span className="text-sm font-medium">{item.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-center gap-6">
+            <button
+              disabled={loading}
+              className="btn btn-primary btn-large min-w-[240px]"
+            >
+              {loading ? "Processing Analysis..." : "Generate Risk Profile"}
+              {loading && <div className="button-loader"></div>}
+            </button>
+          </div>
+        </form>
+
+        {result && (
+          <div className="mt-12 animate-fadeIn">
+            <div className="glass-card !bg-gradient-to-br from-blue-600/10 to-purple-600/10 border-blue-500/20">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Calculator className="text-blue-400" size={20} />
+                    <span className="text-xs font-bold text-blue-400 uppercase tracking-widest">Prediction Results</span>
+                  </div>
+                  <h2 className="text-3xl font-bold text-white mb-4">
+                    Diagnosis for {form.name || "Patient"}
+                  </h2>
+                  <div className="inline-block px-4 py-2 rounded-xl bg-white/5 border border-white/10 mb-6">
+                    <span className="text-gray-400">Health Status: </span>
+                    <span className={`font-bold ${result.health_status === "High Risk" ? "text-red-400" : "text-green-400"}`}>
                       {result.health_status}
                     </span>
-                  </p>
-                </div>
-                <div style={{ marginBottom: "1rem" }}>
-                  <p>
-                    <strong>Risk Percentage:</strong>{" "}
-                    <span className="probability-score">
-                      {result.risk_percentage != null
-                        ? Number(result.risk_percentage).toFixed(2)
-                        : (result.probability * 100).toFixed(2)}
-                      %
-                    </span>
-                  </p>
-                </div>
-                <div style={{ marginBottom: "1rem" }}>
-                  <p>
-                    <strong>Prediction:</strong>{" "}
-                    {result.prediction === 1 ? (
-                      <span
-                        style={{
-                          color: "#dc3545",
-                          fontWeight: "bold",
-                        }}
-                      >
-                        At Risk
-                      </span>
-                    ) : (
-                      <span
-                        style={{
-                          color: "#28a745",
-                          fontWeight: "bold",
-                        }}
-                      >
-                        Not At Risk
-                      </span>
-                    )}
-                  </p>
-                </div>
-                {result.llm_summary && (
-                  <div style={{ marginBottom: "1rem", fontStyle: "italic", color: "rgba(0,0,0,0.85)" }}>
-                    <p><strong>Summary:</strong> {result.llm_summary}</p>
                   </div>
-                )}
+                  {result.llm_summary && (
+                    <p className="text-gray-300 leading-relaxed italic border-l-2 border-blue-500/30 pl-4 py-1">
+                      "{result.llm_summary}"
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex flex-col items-center">
+                  <div className="rpm-score-container !w-48 !h-48">
+                    <svg className="rpm-progress-ring" width="180" height="180">
+                      <circle stroke="rgba(255,255,255,0.05)" strokeWidth="10" fill="transparent" r="75" cx="90" cy="90" />
+                      <circle
+                        stroke={result.health_status === "High Risk" ? "#ef4444" : "#10b981"}
+                        strokeWidth="10"
+                        strokeDasharray={2 * Math.PI * 75}
+                        strokeDashoffset={2 * Math.PI * 75 * (1 - result.risk_percentage / 100)}
+                        strokeLinecap="round"
+                        fill="transparent" r="75" cx="90" cy="90"
+                      />
+                    </svg>
+                    <div className="rpm-score-value">
+                      <span className="rpm-score-number !text-4xl">{Math.round(result.risk_percentage)}%</span>
+                      <span className="rpm-score-label !text-[10px]">Risk Score</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-            )}
-            {error && <p className="error">{error}</p>}
+            </div>
           </div>
-          <div
-            className="risk-report"
-            style={{ marginTop: "2rem" }}
-          />
-        </div>
+        )}
+
+        {error && (
+          <div className="mt-8 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-center">
+            {error}
+          </div>
+        )}
       </div>
     </div>
   );

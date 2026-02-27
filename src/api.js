@@ -61,18 +61,18 @@ export const api = {
     return res.json();
   },
 
-  // Histogram (matplotlib): send numbers, get PNG image
-  async getHistogram({ numbers, title, xlabel, ylabel, bins }) {
-    const res = await fetch(`${BASE}/api/histogram`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ numbers, title, xlabel, ylabel, bins }),
+  // Diet recommendations: send health_status/risk_percentage, get JSON
+  async getDiet(payload) {
+    const res = await fetch(`${BASE}/api/diet`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'Histogram failed');
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Diet recommendations failed");
     }
-    return res.blob();
+    return res.json();
   },
 
   // Emergency workflow (demo)

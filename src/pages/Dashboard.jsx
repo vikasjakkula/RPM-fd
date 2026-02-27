@@ -1,20 +1,17 @@
 import { Link } from "react-router-dom";
-import { BarChart, TrendingUp, AlertCircle, History } from "lucide-react";
+import { BarChart, TrendingUp, AlertCircle, History, Activity } from "lucide-react";
 import { useMemo, useEffect, useState } from "react";
 import {
   LineChart,
   Line,
-  ScatterChart,
-  Scatter,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
-  ZAxis,
 } from "recharts";
 import { api } from "../api";
+import { useLoading } from "../components/Layout";
 
 const Dashboard = () => {
   const [vitalsLatest, setVitalsLatest] = useState(null);
@@ -22,10 +19,12 @@ const Dashboard = () => {
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { setGlobalLoading } = useLoading();
 
   useEffect(() => {
     let cancelled = false;
-    const load = async () => {
+    const load = async (isFirst = false) => {
+      if (isFirst) setGlobalLoading(true);
       try {
         const [latest, history, alertsRes] = await Promise.all([
           api.getVitalsLatest().catch(() => null),
@@ -40,61 +39,55 @@ const Dashboard = () => {
       } catch (e) {
         if (!cancelled) setError(e.message || "Failed to load data");
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          setGlobalLoading(false);
+        }
       }
     };
-    load();
-    const interval = setInterval(load, 4000);
+
+    load(true);
+    const interval = setInterval(() => load(false), 4000);
     return () => {
       cancelled = true;
       clearInterval(interval);
     };
-  }, []);
+  }, [setGlobalLoading]);
+
+  const rpmScore = useMemo(() => {
+    if (!vitalsLatest) return 0;
+    // Mock RPM Prediction Logic (e.g. Heart Rate + BP factor)
+    const hrScale = Math.min(Math.max((vitalsLatest.heartRate - 60) / 40, 0), 1) * 40;
+    const bpScale = Math.min(Math.max((vitalsLatest.systolic - 120) / 40, 0), 1) * 60;
+    return Math.round(Math.max(100 - (hrScale + bpScale), 0));
+  }, [vitalsLatest]);
 
   const metrics = useMemo(() => {
     const v = vitalsLatest;
-    if (!v) {
-      return [
-        { title: "Blood Pressure", value: "—", unit: "mmHg", status: "normal", change: "—" },
-        { title: "Heart Rate", value: "—", unit: "bpm", status: "normal", change: "—" },
-        { title: "SpO₂", value: "—", unit: "%", status: "normal", change: "—" },
-        { title: "Temp", value: "—", unit: "°C", status: "normal", change: "—" },
-      ];
-    }
-    const sys = v.systolic ?? 0;
-    const dia = v.diastolic ?? 0;
-    const hr = v.heartRate ?? 0;
-    const spo2 = v.bloodOxygen ?? 0;
-    const temp = v.temperature ?? 0;
+    if (!v) return [];
+
     return [
       {
         title: "Blood Pressure",
-        value: `${sys}/${dia}`,
+        value: `${v.systolic}/${v.diastolic}`,
         unit: "mmHg",
-        status: sys > 140 || dia > 90 ? "elevated" : "normal",
-        change: "live",
+        status: v.systolic > 140 || v.diastolic > 90 ? "High" : "Normal",
+        color: v.systolic > 140 ? "#ef4444" : "#3b82f6",
       },
       {
         title: "Heart Rate",
-        value: String(hr),
-        unit: "bpm",
-        status: hr > 100 || hr < 50 ? "elevated" : "normal",
-        change: "live",
+        value: v.heartRate,
+        unit: "BPM",
+        status: v.heartRate > 100 || v.heartRate < 50 ? "Irregular" : "Normal",
+        color: v.heartRate > 100 ? "#f97316" : "#10b981",
       },
       {
-        title: "SpO₂",
-        value: String(spo2),
+        title: "SpO2 Level",
+        value: v.bloodOxygen,
         unit: "%",
-        status: spo2 < 95 ? "elevated" : "normal",
-        change: "live",
-      },
-      {
-        title: "Temp",
-        value: typeof temp === "number" ? temp.toFixed(1) : String(temp),
-        unit: "°C",
-        status: "normal",
-        change: "live",
-      },
+        status: v.bloodOxygen < 95 ? "Low" : "Optimal",
+        color: v.bloodOxygen < 95 ? "#ef4444" : "#06b6d4",
+      }
     ];
   }, [vitalsLatest]);
 
@@ -102,229 +95,122 @@ const Dashboard = () => {
     return vitalsHistory
       .slice()
       .reverse()
-      .map((r, i) => ({
-        index: i + 1,
+      .map((r) => ({
         time: new Date(r.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         heartRate: r.heartRate ?? 0,
-        systolic: r.systolic ?? 0,
-        diastolic: r.diastolic ?? 0,
-      }));
-  }, [vitalsHistory]);
-
-  const scatterData = useMemo(() => {
-    return vitalsHistory.map((r) => ({
-      x: r.systolic ?? 0,
-      y: r.diastolic ?? 0,
-      z: r.heartRate ?? 0,
-      timestamp: r.timestamp,
-    }));
-  }, [vitalsHistory]);
-
-  const recentReadings = useMemo(() => {
-    return vitalsHistory
-      .slice(-8)
-      .reverse()
-      .map((r) => ({
-        date: new Date(r.timestamp).toLocaleDateString(),
-        time: new Date(r.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-        bp: `${r.systolic ?? 0}/${r.diastolic ?? 0}`,
-        hr: String(r.heartRate ?? 0),
-        status: (r.systolic > 140 || r.diastolic > 90 || r.heartRate > 100) ? "Elevated" : "Normal",
       }));
   }, [vitalsHistory]);
 
   return (
-    <div className="dashboard-page">
-      <div className="container">
-        <div className="dashboard-header" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
-          <div>
-            <h1 className="dashboard-title">Health Dashboard</h1>
-            <p className="dashboard-subtitle">
-              Monitor your heart health metrics in real-time
-            </p>
+    <div className="page-panel">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
+        <div>
+          <h1 className="text-4xl font-extrabold text-white mb-2">Patient Overview</h1>
+          <p className="text-gray-400">Real-time IoT patient monitoring system</p>
+        </div>
+        <Link to="/predict" className="btn btn-primary">
+          <Activity size={20} /> Run RPM Prediction
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+        {/* RPM Health Score Ring */}
+        <div className="glass-card flex flex-col items-center">
+          <h3 className="text-lg font-semibold text-gray-300 mb-4">RPM Health Index</h3>
+          <div className="rpm-score-container">
+            <svg className="rpm-progress-ring" width="220" height="220">
+              <circle
+                stroke="rgba(255,255,255,0.05)"
+                strokeWidth="12" fill="transparent" r="90" cx="110" cy="110"
+              />
+              <circle
+                stroke="#3b82f6"
+                strokeWidth="12"
+                strokeDasharray={2 * Math.PI * 90}
+                strokeDashoffset={2 * Math.PI * 90 * (1 - rpmScore / 100)}
+                strokeLinecap="round"
+                fill="transparent" r="90" cx="110" cy="110"
+              />
+            </svg>
+            <div className="rpm-score-value">
+              <span className="rpm-score-number">{rpmScore}%</span>
+              <span className="rpm-score-label">Stability</span>
+            </div>
           </div>
-          <Link
-            to="/dashboard/patient-history"
-            className="nav-link"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              padding: "0.5rem 1rem",
-              background: "rgba(0,0,0,0.06)",
-              borderRadius: 8,
-            }}
-          >
-            <History size={18} /> Patient History
-          </Link>
+          <p className="text-sm text-gray-500 mt-2">Predicted out of 100%</p>
         </div>
 
-        {error && (
-          <p style={{ color: "#dc3545", marginBottom: "1rem" }}>{error}</p>
-        )}
-        {loading && !vitalsLatest && (
-          <p style={{ color: "rgba(0,0,0,0.7)" }}>Loading vitals…</p>
-        )}
-
-        <div className="metrics-grid">
-          {metrics.map((metric, index) => (
-            <div
-              key={index}
-              className="metric-card"
-              style={{ animationDelay: `${index * 0.1}s` }}
-            >
-              <div className="metric-header">
-                <div className="metric-icon">
-                  <BarChart size={24} />
-                </div>
-                <span
-                  className={`metric-change ${
-                    metric.change === "live"
-                      ? "neutral"
-                      : metric.change.startsWith("+")
-                        ? "positive"
-                        : metric.change.startsWith("-")
-                          ? "negative"
-                          : "neutral"
-                  }`}
-                >
-                  {metric.change}
+        {/* Real-time Metrics */}
+        <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {metrics.map((m, i) => (
+            <div key={i} className="glass-card" style={{ "--accent-color": m.color }}>
+              <div className="flex justify-between items-start mb-4">
+                <span className="text-gray-400 text-sm font-medium">{m.title}</span>
+                <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/5" style={{ color: m.color }}>
+                  {m.status}
                 </span>
               </div>
-              <h3 className="metric-label">{metric.title}</h3>
-              <div className="metric-value-group">
-                <span className="metric-value">{metric.value}</span>
-                <span className="metric-unit">{metric.unit}</span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl font-bold text-white">{m.value}</span>
+                <span className="text-gray-500 font-medium">{m.unit}</span>
               </div>
-              <div className="metric-status">{metric.status}</div>
             </div>
           ))}
+          <Link to="/dashboard/patient-history" className="glass-card group hover:border-purple-500/30 flex items-center justify-center gap-4">
+            <div className="p-3 rounded-2xl bg-purple-500/10 text-purple-400 group-hover:scale-110 transition-transform">
+              <History size={24} />
+            </div>
+            <div className="text-left">
+              <h4 className="text-white font-semibold">View History</h4>
+              <p className="text-xs text-gray-500">Historical records & trends</p>
+            </div>
+          </Link>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+        <div className="glass-card">
+          <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+            <TrendingUp size={20} className="text-blue-400" />
+            Heart Rate Trend
+          </h2>
+          <div className="h-[300px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={lineChartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                <XAxis dataKey="time" hide />
+                <YAxis stroke="rgba(255,255,255,0.3)" fontSize={12} domain={['auto', 'auto']} />
+                <Tooltip
+                  contentStyle={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
+                  itemStyle={{ color: '#60a5fa' }}
+                />
+                <Line type="monotone" dataKey="heartRate" stroke="#3b82f6" strokeWidth={3} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
-        <div className="dashboard-grid">
-          <div className="chart-card">
-            <h2 className="card-title" style={{ display: "flex", alignItems: "center" }}>
-              <TrendingUp size={20} style={{ marginRight: "0.5rem" }} /> Heart Rate Trend
-            </h2>
-            <div style={{ width: "100%", height: 220, marginTop: "1rem" }}>
-              {lineChartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={lineChartData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.08)" />
-                    <XAxis dataKey="time" tick={{ fontSize: 11 }} stroke="rgba(0,0,0,0.5)" />
-                    <YAxis tick={{ fontSize: 11 }} stroke="rgba(0,0,0,0.5)" domain={["auto", "auto"]} />
-                    <Tooltip
-                      contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                      formatter={(value) => [value, "Heart rate"]}
-                      labelFormatter={(_, payload) => payload?.[0]?.payload?.time}
-                    />
-                    <Legend />
-                    <Line
-                      type="monotone"
-                      dataKey="heartRate"
-                      name="Heart rate (bpm)"
-                      stroke="#0f172a"
-                      strokeWidth={2}
-                      dot={{ r: 3 }}
-                      activeDot={{ r: 5 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="chart-placeholder" style={{ minHeight: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <p style={{ color: "#333", fontSize: "1rem" }}>Waiting for vitals…</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="chart-card">
-            <h2 className="card-title" style={{ display: "flex", alignItems: "center" }}>
-              <TrendingUp size={20} style={{ marginRight: "0.5rem" }} /> BP Scatter (Systolic vs Diastolic)
-            </h2>
-            <div style={{ width: "100%", height: 220, marginTop: "1rem" }}>
-              {scatterData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <ScatterChart margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.08)" />
-                    <XAxis type="number" dataKey="x" name="Systolic" unit=" mmHg" tick={{ fontSize: 11 }} stroke="rgba(0,0,0,0.5)" domain={["dataMin - 5", "dataMax + 5"]} />
-                    <YAxis type="number" dataKey="y" name="Diastolic" unit=" mmHg" tick={{ fontSize: 11 }} stroke="rgba(0,0,0,0.5)" domain={["dataMin - 5", "dataMax + 5"]} />
-                    <ZAxis type="number" dataKey="z" range={[80, 400]} name="HR" />
-                    <Tooltip
-                      cursor={{ strokeDasharray: "3 3" }}
-                      contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                      formatter={(value, name) => [value, name === "x" ? "Systolic" : name === "y" ? "Diastolic" : "Heart rate"]}
-                    />
-                    <Scatter name="Readings" data={scatterData} fill="#0f172a" fillOpacity={0.7} />
-                  </ScatterChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="chart-placeholder" style={{ minHeight: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <p style={{ color: "#333", fontSize: "1rem" }}>Waiting for vitals…</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="alerts-card" style={{ gridColumn: "1 / -1" }}>
-            <h2 className="card-title">
-              <AlertCircle size={20} /> Health Alerts
-            </h2>
-            <div className="alerts-list">
-              {alerts.length === 0 ? (
-                <div className="alert-item success">
-                  <p className="alert-text">No recent alerts</p>
-                  <p className="alert-time">Thresholds within range</p>
-                </div>
-              ) : (
-                alerts.slice(0, 5).map((a, i) => (
-                  <div key={i} className={`alert-item ${a.severity === "critical" ? "info" : "success"}`}>
-                    <p className="alert-text">{a.message || a.type}</p>
-                    <p className="alert-time">{a.timestamp ? new Date(a.timestamp).toLocaleString() : ""}</p>
+        <div className="glass-card">
+          <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+            <AlertCircle size={20} className="text-red-400" />
+            Security & Vitals Alerts
+          </h2>
+          <div className="space-y-4">
+            {alerts.length === 0 ? (
+              <div className="p-8 text-center border-2 border-dashed border-white/5 rounded-2xl">
+                <p className="text-gray-500">All systems operational. No alerts detected.</p>
+              </div>
+            ) : (
+              alerts.slice(0, 4).map((a, i) => (
+                <div key={i} className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5">
+                  <div className={`w-2 h-2 rounded-full ${a.severity === 'critical' ? 'bg-red-500 animate-ping' : 'bg-orange-500'}`}></div>
+                  <div className="flex-1">
+                    <p className="text-white text-sm font-medium">{a.message || a.type}</p>
+                    <p className="text-xs text-gray-500">{new Date(a.timestamp).toLocaleTimeString()}</p>
                   </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="readings-card">
-          <h2 className="card-title">Recent Readings</h2>
-          <div className="table-wrapper">
-            <table className="readings-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Time</th>
-                  <th>Blood Pressure</th>
-                  <th>Heart Rate</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentReadings.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} style={{ padding: "1.5rem", color: "rgba(0,0,0,0.6)" }}>
-                      No readings yet. Start the backend to stream vitals.
-                    </td>
-                  </tr>
-                ) : (
-                  recentReadings.map((reading, index) => (
-                    <tr key={index}>
-                      <td>{reading.date}</td>
-                      <td>{reading.time}</td>
-                      <td>{reading.bp} mmHg</td>
-                      <td>{reading.hr} bpm</td>
-                      <td>
-                        <span className={`status-badge ${reading.status === "Normal" ? "normal" : "elevated"}`}>
-                          {reading.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

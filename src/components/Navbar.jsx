@@ -4,7 +4,7 @@ const navLinks = [
   { to: "/home", label: "Home" },
   { to: "/dashboard", label: "Dashboard" },
   { to: "/predict", label: "Predict" },
-  { to: "/histogram", label: "Histogram" },
+  { to: "/diet", label: "Diet" },
 ];
 
 const Navbar = () => (
