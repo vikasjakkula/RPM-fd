@@ -138,15 +138,13 @@ const Home = () => {
         <div style={heroInnerStyle}>
           <div className="hero-content" style={leftColStyle}>
             <h1 className="hero-title" style={heroTitleStyle}>
-              Your Heart Health,<br />
+            Remote Patient Monitoring,<br />
               <span className="text-gradient" style={textGradient}>
-                Our Priority
+              Healthcare
               </span>
             </h1>
             <p className="hero-description" style={heroDescStyle}>
-              Advanced heart disease prediction and monitoring system powered by
-              AI. Take control of your cardiovascular health with data-driven
-              insights.
+            An agent that monitors patient vitals (heart rate, blood pressure) via mock IoT data streams and automatically triggers emergency workflows when dangerous thresholds are crossed.
             </p>
             <div className="hero-buttons" style={heroBtnGroupStyle}>
               <Link to="/predict" style={btnPrimary}>
@@ -163,7 +161,7 @@ const Home = () => {
               alt="Heart Health"
               style={imageStyle}
               loading="eager"
-              draggable={false}
+              draggable={true}
             />
           </div>
         </div>
@@ -171,97 +169,68 @@ const Home = () => {
       <section className="landing-brief">
         <div className="container">
           <ScrollReveal>
-            <div style={topicStyle}>Why Use Our ML Heart Risk System?</div>
+            <div style={topicStyle}>Why Use Our Remote Patient Monitoring System?</div>
           </ScrollReveal>
           <ScrollReveal stagger>
             <div style={textStyle}>
-              <b>Continuous Prediction:</b> Your heart risk changes every
-              day—not just once at the doctor. Our system gives ongoing
-              predictions as your data updates, offering real-time insights.
+              <b>Real-time Monitoring:</b> Continuously collects and analyzes vitals from IoT devices, triggering alerts when thresholds are breached.
             </div>
             <div style={textStyle}>
-              <b>Early Screening Before Symptoms:</b> Most people visit hospitals
-              only after problems occur. Our solution screens you early, alerting
-              you to risks years before major tests are needed.
+              <b>Automated Emergency Response:</b> Instantly triggers workflows like CPR training or emergency room notifications when critical thresholds are exceeded.
             </div>
             <div style={textStyle}>
-              <b>Cost-Effective:</b> Medical tests can be expensive and
-              repetitive. Our AI tells you when tests are actually necessary,
-              helping you avoid unnecessary spending.
+              <b>Adaptable Thresholds:</b> Easily configure safety thresholds for different patient profiles and care scenarios.
             </div>
             <div style={textStyle}>
-              <b>Works with Partial Data:</b> Even if you don't have complete
-              medical information (like cholesterol or ECG), our model predicts
-              risk with the data you provide.
+              <b>Flexible Deployment:</b> Suitable for remote clinics, home health care, and patient monitoring in low-resource settings.
             </div>
             <div style={textStyle}>
-              <b>Ideal for Rural & Remote Areas:</b> No cardiologist nearby? Our
-              tool acts as a rapid pre-diagnosis system, bringing expert-level
-              screening everywhere.
+              <b>API-First Design:</b> Ready for integration with existing healthcare systems or for extension with AI-driven analytics.
             </div>
             <div style={textStyle}>
-              <b>Doctor Support & Patient Prioritization:</b> Hospitals can
-              instantly identify and prioritize high-risk patients, speeding up
-              care before lab results arrive.
+              <b>Scalable & Hackathon-Ready:</b> Designed for rapid development and easy scaling to support multiple patients and devices.
             </div>
             <div style={textStyle}>
-              <b>Long-Term Health Tracking:</b> Track trends in blood pressure,
-              sleep, stress, and smoking. Our app visualizes your health patterns
-              over time—something a single clinic visit can't do.
-            </div>
-            <div style={textStyle}>
-              <b>Preventive Healthcare Focus:</b> We enable you to Predict →
-              Prevent → Protect—catching problems before symptoms start.
+              <b>Integrates with Existing Systems:</b> Easily connect to existing EHRs or monitoring platforms for seamless data flow.
             </div>
           </ScrollReveal>
 
           <ScrollReveal>
-            <div style={topicStyle}>How Our ML System Works</div>
+            <div style={topicStyle}>How Our Remote Patient Monitoring System Works</div>
           </ScrollReveal>
           <ScrollReveal stagger>
             <div style={textStyle}>
-              <b>Multi-Model Hybrid:</b> Combines Logistic Regression and Random
-              Forest for highly accurate results.
+              <b>Mock IoT Data Stream:</b> Simulates live patient vitals from IoT devices, providing a realistic monitoring experience.
             </div>
             <div style={textStyle}>
-              <b>Smart Missing Data Handling:</b> Uses imputation and feature
-              weighting—rare among typical hackathon projects.
+              <b>Real-time Threshold Evaluation:</b> Continuously checks vitals against configurable safety thresholds and triggers alerts when thresholds are breached.
             </div>
             <div style={textStyle}>
-              <b>Personalized Risk Scoring:</b> Adapts to diabetes, obesity,
-              gender, age, and your lifestyle factors.
+              <b>Emergency Workflow Automation:</b> Triggers pre-defined workflows like CPR training or emergency room notifications when critical thresholds are exceeded.
             </div>
             <div style={textStyle}>
-              <b>Explainable Results:</b> Dashboard shows key risk factors,
-              feature importance, and condition severity, so you know <em>why</em>{" "}
-              the model predicts a certain risk.
+              <b>API-First Design:</b> Ready for integration with existing healthcare systems or for extension with AI-driven analytics.
             </div>
             <div style={textStyle}>
-              <b>Trend-Based Analysis:</b> Monitors your health data over time,
-              revealing patterns like rising blood pressure or increased stress
-              for deeper insights.
+              <b>Scalable & Hackathon-Ready:</b> Designed for rapid development and easy scaling to support multiple patients and devices.
             </div>
           </ScrollReveal>
 
           <ScrollReveal>
-            <div style={topicStyle}>Our Data Approach</div>
+            <div style={topicStyle}>Our Remote Patient Monitoring System</div>
           </ScrollReveal>
           <ScrollReveal stagger>
             <div style={textStyle}>
-              <b>Primary Database: MongoDB</b> — Flexible for messy, varied health
-              records; perfectly fits our user health history storage; grows
-              easily to support thousands of patients.
+              <b>Mock IoT Data Stream:</b> Simulates live patient vitals from IoT devices, providing a realistic monitoring experience.
             </div>
             <div style={textStyle}>
-              <b>What We Store:</b> User profile, medical details (BP,
-              cholesterol, diabetes, obesity), lifestyle factors (sleep, stress,
-              smoking), risk scores, and timestamps.
+              <b>Real-time Threshold Evaluation:</b> Continuously checks vitals against configurable safety thresholds and triggers alerts when thresholds are breached.
             </div>
           </ScrollReveal>
 
           <ScrollReveal>
             <div
-              className="final-judge-statement"
+              className="remote-patient-monitoring-system"
               style={{
                 marginTop: "2rem",
                 background: "rgba(0,0,0,0.04)",
@@ -269,14 +238,9 @@ const Home = () => {
                 padding: "1.5rem",
               }}
             >
-              <strong>Hackathon-Ready Summary:</strong>
+              <strong>Remote Patient Monitoring System:</strong>
               <p style={{ marginTop: "1rem", fontStyle: "italic" }}>
-                "Our project is not a replacement for doctors; it is an
-                early-warning system. We help users know when they actually need
-                medical tests. We predict risk even with missing data, track
-                long-term health patterns, and support doctors with fast
-                prioritisation. Hospitals can use this for pre-screening thousands
-                of patients. That's the real complexity."
+                "Our Remote Patient Monitoring System is a real-time agent that monitors patient vitals (heart rate, blood pressure) via mock IoT data streams and automatically triggers emergency workflows when dangerous thresholds are crossed."
               </p>
             </div>
           </ScrollReveal>
