@@ -4,8 +4,7 @@ import DashboardLayout from "./components/DashboardLayout";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import Predict from "./pages/Predict";
-import About from "./pages/About";
-import Feedback from "./pages/Feedback";
+import Histogram from "./pages/Histogram";
 
 const App = () => (
   <BrowserRouter>
@@ -20,8 +19,7 @@ const App = () => (
           {/* Add more dashboard sub-routes here; they render in DashboardLayout's Outlet */}
         </Route>
         <Route path="predict" element={<Predict />} />
-        <Route path="about" element={<About />} />
-        <Route path="feedback" element={<Feedback />} />
+        <Route path="histogram" element={<Histogram />} />
       </Route>
       <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>

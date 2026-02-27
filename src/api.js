@@ -47,6 +47,34 @@ export const api = {
     return res.json();
   },
 
+  // Heart risk prediction (Flask + optional LLM)
+  async predict(formData) {
+    const res = await fetch(`${BASE}/predict`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Prediction failed');
+    }
+    return res.json();
+  },
+
+  // Histogram (matplotlib): send numbers, get PNG image
+  async getHistogram({ numbers, title, xlabel, ylabel, bins }) {
+    const res = await fetch(`${BASE}/api/histogram`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ numbers, title, xlabel, ylabel, bins }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Histogram failed');
+    }
+    return res.blob();
+  },
+
   // Emergency workflow (demo)
   async triggerEmergency(alert = null, source = 'manual') {
     const res = await fetch(`${BASE}/api/emergency/trigger`, {

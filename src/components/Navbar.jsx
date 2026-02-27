@@ -4,16 +4,12 @@ const navLinks = [
   { to: "/home", label: "Home" },
   { to: "/dashboard", label: "Dashboard" },
   { to: "/predict", label: "Predict" },
-  { to: "/about", label: "About" },
-  { to: "/feedback", label: "Feedback" },
+  { to: "/histogram", label: "Histogram" },
 ];
 
 const Navbar = () => (
   <nav className="global-navbar">
-    <NavLink to="/home" className="brand" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-      <img src="/image copy.png" alt="Cardio360" className="navbar-logo" style={{ height: "2rem", width: "auto" }} />
-      Cardio360
-    </NavLink>
+    <span className="navbar-brand" style={{ fontWeight: "bold", fontSize: "1.15rem", marginRight: "2rem", letterSpacing: "0.03em" }}>RPM</span>
     <ul className="nav-links">
       {navLinks.map(({ to, label }) => (
         <li key={to}>

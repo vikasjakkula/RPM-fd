@@ -1,78 +1,136 @@
 import { BarChart, TrendingUp, AlertCircle } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
+import {
+  LineChart,
+  Line,
+  ScatterChart,
+  Scatter,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+  ZAxis,
+} from "recharts";
+import { api } from "../api";
 
 const Dashboard = () => {
-  const metrics = [
-    {
-      title: "Blood Pressure",
-      value: "120/80",
-      unit: "mmHg",
-      status: "normal",
-      change: "+2%",
-    },
-    {
-      title: "Heart Rate",
-      value: "72",
-      unit: "bpm",
-      status: "normal",
-      change: "-3%",
-    },
-    {
-      title: "Cholesterol",
-      value: "185",
-      unit: "mg/dL",
-      status: "normal",
-      change: "+5%",
-    },
-    {
-      title: "Blood Sugar",
-      value: "95",
-      unit: "mg/dL",
-      status: "normal",
-      change: "0%",
-    },
-  ];
+  const [vitalsLatest, setVitalsLatest] = useState(null);
+  const [vitalsHistory, setVitalsHistory] = useState([]);
+  const [alerts, setAlerts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const recentReadings = [
-    {
-      date: "2025-11-20",
-      time: "08:30 AM",
-      bp: "118/78",
-      hr: "70",
-      status: "Normal",
-    },
-    {
-      date: "2025-11-19",
-      time: "09:15 AM",
-      bp: "122/82",
-      hr: "74",
-      status: "Normal",
-    },
-    {
-      date: "2025-11-18",
-      time: "07:45 AM",
-      bp: "120/80",
-      hr: "72",
-      status: "Normal",
-    },
-    {
-      date: "2025-11-17",
-      time: "08:00 AM",
-      bp: "125/85",
-      hr: "75",
-      status: "Elevated",
-    },
-  ];
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const [latest, history, alertsRes] = await Promise.all([
+          api.getVitalsLatest().catch(() => null),
+          api.getVitalsHistory(50).catch(() => []),
+          api.getAlerts(20).catch(() => []),
+        ]);
+        if (!cancelled) {
+          setVitalsLatest(latest);
+          setVitalsHistory(Array.isArray(history) ? history : []);
+          setAlerts(Array.isArray(alertsRes) ? alertsRes : []);
+        }
+      } catch (e) {
+        if (!cancelled) setError(e.message || "Failed to load data");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    load();
+    const interval = setInterval(load, 4000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
 
-  const heartRateData = useMemo(() => {
-    return recentReadings
+  const metrics = useMemo(() => {
+    const v = vitalsLatest;
+    if (!v) {
+      return [
+        { title: "Blood Pressure", value: "—", unit: "mmHg", status: "normal", change: "—" },
+        { title: "Heart Rate", value: "—", unit: "bpm", status: "normal", change: "—" },
+        { title: "SpO₂", value: "—", unit: "%", status: "normal", change: "—" },
+        { title: "Temp", value: "—", unit: "°C", status: "normal", change: "—" },
+      ];
+    }
+    const sys = v.systolic ?? 0;
+    const dia = v.diastolic ?? 0;
+    const hr = v.heartRate ?? 0;
+    const spo2 = v.bloodOxygen ?? 0;
+    const temp = v.temperature ?? 0;
+    return [
+      {
+        title: "Blood Pressure",
+        value: `${sys}/${dia}`,
+        unit: "mmHg",
+        status: sys > 140 || dia > 90 ? "elevated" : "normal",
+        change: "live",
+      },
+      {
+        title: "Heart Rate",
+        value: String(hr),
+        unit: "bpm",
+        status: hr > 100 || hr < 50 ? "elevated" : "normal",
+        change: "live",
+      },
+      {
+        title: "SpO₂",
+        value: String(spo2),
+        unit: "%",
+        status: spo2 < 95 ? "elevated" : "normal",
+        change: "live",
+      },
+      {
+        title: "Temp",
+        value: typeof temp === "number" ? temp.toFixed(1) : String(temp),
+        unit: "°C",
+        status: "normal",
+        change: "live",
+      },
+    ];
+  }, [vitalsLatest]);
+
+  const lineChartData = useMemo(() => {
+    return vitalsHistory
       .slice()
       .reverse()
-      .map((r, idx) => ({
-        date: r.date.slice(5),
-        heartRate: parseInt(r.hr, 10),
+      .map((r, i) => ({
+        index: i + 1,
+        time: new Date(r.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        heartRate: r.heartRate ?? 0,
+        systolic: r.systolic ?? 0,
+        diastolic: r.diastolic ?? 0,
       }));
-  }, []);
+  }, [vitalsHistory]);
+
+  const scatterData = useMemo(() => {
+    return vitalsHistory.map((r) => ({
+      x: r.systolic ?? 0,
+      y: r.diastolic ?? 0,
+      z: r.heartRate ?? 0,
+      timestamp: r.timestamp,
+    }));
+  }, [vitalsHistory]);
+
+  const recentReadings = useMemo(() => {
+    return vitalsHistory
+      .slice(-8)
+      .reverse()
+      .map((r) => ({
+        date: new Date(r.timestamp).toLocaleDateString(),
+        time: new Date(r.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+        bp: `${r.systolic ?? 0}/${r.diastolic ?? 0}`,
+        hr: String(r.heartRate ?? 0),
+        status: (r.systolic > 140 || r.diastolic > 90 || r.heartRate > 100) ? "Elevated" : "Normal",
+      }));
+  }, [vitalsHistory]);
 
   return (
     <div className="dashboard-page">
@@ -83,6 +141,13 @@ const Dashboard = () => {
             Monitor your heart health metrics in real-time
           </p>
         </div>
+
+        {error && (
+          <p style={{ color: "#dc3545", marginBottom: "1rem" }}>{error}</p>
+        )}
+        {loading && !vitalsLatest && (
+          <p style={{ color: "rgba(0,0,0,0.7)" }}>Loading vitals…</p>
+        )}
 
         <div className="metrics-grid">
           {metrics.map((metric, index) => (
@@ -97,11 +162,13 @@ const Dashboard = () => {
                 </div>
                 <span
                   className={`metric-change ${
-                    metric.change.startsWith("+")
-                      ? "positive"
-                      : metric.change.startsWith("-")
-                        ? "negative"
-                        : "neutral"
+                    metric.change === "live"
+                      ? "neutral"
+                      : metric.change.startsWith("+")
+                        ? "positive"
+                        : metric.change.startsWith("-")
+                          ? "negative"
+                          : "neutral"
                   }`}
                 >
                   {metric.change}
@@ -119,46 +186,87 @@ const Dashboard = () => {
 
         <div className="dashboard-grid">
           <div className="chart-card">
-            <h2
-              className="card-title"
-              style={{ display: "flex", alignItems: "center" }}
-            >
-              <TrendingUp size={20} style={{ marginRight: "0.5rem" }} /> Heart
-              Rate Trend
+            <h2 className="card-title" style={{ display: "flex", alignItems: "center" }}>
+              <TrendingUp size={20} style={{ marginRight: "0.5rem" }} /> Heart Rate Trend
             </h2>
-            <div
-              className="chart-placeholder"
-              style={{
-                background: "#e6e6e6",
-                border: "1px dashed #ccc",
-                borderRadius: "8px",
-                padding: "0",
-                marginTop: "1rem",
-                minHeight: "180px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <p style={{ color: "#333", fontSize: "1rem" }}>
-                Chart visualization coming soon
-              </p>
+            <div style={{ width: "100%", height: 220, marginTop: "1rem" }}>
+              {lineChartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={lineChartData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.08)" />
+                    <XAxis dataKey="time" tick={{ fontSize: 11 }} stroke="rgba(0,0,0,0.5)" />
+                    <YAxis tick={{ fontSize: 11 }} stroke="rgba(0,0,0,0.5)" domain={["auto", "auto"]} />
+                    <Tooltip
+                      contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                      formatter={(value) => [value, "Heart rate"]}
+                      labelFormatter={(_, payload) => payload?.[0]?.payload?.time}
+                    />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="heartRate"
+                      name="Heart rate (bpm)"
+                      stroke="#0f172a"
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                      activeDot={{ r: 5 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="chart-placeholder" style={{ minHeight: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <p style={{ color: "#333", fontSize: "1rem" }}>Waiting for vitals…</p>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="alerts-card">
+          <div className="chart-card">
+            <h2 className="card-title" style={{ display: "flex", alignItems: "center" }}>
+              <TrendingUp size={20} style={{ marginRight: "0.5rem" }} /> BP Scatter (Systolic vs Diastolic)
+            </h2>
+            <div style={{ width: "100%", height: 220, marginTop: "1rem" }}>
+              {scatterData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <ScatterChart margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.08)" />
+                    <XAxis type="number" dataKey="x" name="Systolic" unit=" mmHg" tick={{ fontSize: 11 }} stroke="rgba(0,0,0,0.5)" domain={["dataMin - 5", "dataMax + 5"]} />
+                    <YAxis type="number" dataKey="y" name="Diastolic" unit=" mmHg" tick={{ fontSize: 11 }} stroke="rgba(0,0,0,0.5)" domain={["dataMin - 5", "dataMax + 5"]} />
+                    <ZAxis type="number" dataKey="z" range={[80, 400]} name="HR" />
+                    <Tooltip
+                      cursor={{ strokeDasharray: "3 3" }}
+                      contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                      formatter={(value, name) => [value, name === "x" ? "Systolic" : name === "y" ? "Diastolic" : "Heart rate"]}
+                    />
+                    <Scatter name="Readings" data={scatterData} fill="#0f172a" fillOpacity={0.7} />
+                  </ScatterChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="chart-placeholder" style={{ minHeight: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <p style={{ color: "#333", fontSize: "1rem" }}>Waiting for vitals…</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="alerts-card" style={{ gridColumn: "1 / -1" }}>
             <h2 className="card-title">
               <AlertCircle size={20} /> Health Alerts
             </h2>
             <div className="alerts-list">
-              <div className="alert-item success">
-                <p className="alert-text">All metrics normal</p>
-                <p className="alert-time">Last checked: 2 hours ago</p>
-              </div>
-              <div className="alert-item info">
-                <p className="alert-text">Check-up reminder</p>
-                <p className="alert-time">Scheduled for tomorrow</p>
-              </div>
+              {alerts.length === 0 ? (
+                <div className="alert-item success">
+                  <p className="alert-text">No recent alerts</p>
+                  <p className="alert-time">Thresholds within range</p>
+                </div>
+              ) : (
+                alerts.slice(0, 5).map((a, i) => (
+                  <div key={i} className={`alert-item ${a.severity === "critical" ? "info" : "success"}`}>
+                    <p className="alert-text">{a.message || a.type}</p>
+                    <p className="alert-time">{a.timestamp ? new Date(a.timestamp).toLocaleString() : ""}</p>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -177,23 +285,27 @@ const Dashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                {recentReadings.map((reading, index) => (
-                  <tr key={index}>
-                    <td>{reading.date}</td>
-                    <td>{reading.time}</td>
-                    <td>{reading.bp} mmHg</td>
-                    <td>{reading.hr} bpm</td>
-                    <td>
-                      <span
-                        className={`status-badge ${
-                          reading.status === "Normal" ? "normal" : "elevated"
-                        }`}
-                      >
-                        {reading.status}
-                      </span>
+                {recentReadings.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} style={{ padding: "1.5rem", color: "rgba(0,0,0,0.6)" }}>
+                      No readings yet. Start the backend to stream vitals.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  recentReadings.map((reading, index) => (
+                    <tr key={index}>
+                      <td>{reading.date}</td>
+                      <td>{reading.time}</td>
+                      <td>{reading.bp} mmHg</td>
+                      <td>{reading.hr} bpm</td>
+                      <td>
+                        <span className={`status-badge ${reading.status === "Normal" ? "normal" : "elevated"}`}>
+                          {reading.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

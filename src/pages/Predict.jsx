@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Stethoscope } from "lucide-react";
+import { api } from "../api";
 
 function Predict() {
   const [form, setForm] = useState({
@@ -38,18 +39,10 @@ function Predict() {
     setResult(null);
     setError(null);
     try {
-      const response = await fetch("http://localhost:5000/predict", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(form),
-      });
-      if (!response.ok) throw new Error("Server Error!");
-      const data = await response.json();
+      const data = await api.predict(form);
       setResult(data);
     } catch (err) {
-      setError("Failed to fetch prediction.");
+      setError(err.message || "Failed to fetch prediction.");
     }
     setLoading(false);
   };
@@ -311,8 +304,9 @@ function Predict() {
                   <p>
                     <strong>Risk Percentage:</strong>{" "}
                     <span className="probability-score">
-                      {result.risk_percentage?.toFixed(2) ||
-                        (result.probability * 100).toFixed(2)}
+                      {result.risk_percentage != null
+                        ? Number(result.risk_percentage).toFixed(2)
+                        : (result.probability * 100).toFixed(2)}
                       %
                     </span>
                   </p>
@@ -341,14 +335,11 @@ function Predict() {
                     )}
                   </p>
                 </div>
-                <div>
-                  <p>
-                    <strong>Probability Score:</strong>{" "}
-                    <span>
-                      {(result.probability * 100).toFixed(2)}%
-                    </span>
-                  </p>
-                </div>
+                {result.llm_summary && (
+                  <div style={{ marginBottom: "1rem", fontStyle: "italic", color: "rgba(0,0,0,0.85)" }}>
+                    <p><strong>Summary:</strong> {result.llm_summary}</p>
+                  </div>
+                )}
               </div>
             )}
             {error && <p className="error">{error}</p>}
