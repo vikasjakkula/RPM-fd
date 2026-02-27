@@ -5,6 +5,7 @@ import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import Predict from "./pages/Predict";
 import Histogram from "./pages/Histogram";
+import PatientHistory from "./pages/PatientHistory";
 
 const App = () => (
   <BrowserRouter>
@@ -16,7 +17,7 @@ const App = () => (
         {/* Second outlet: DashboardLayout wraps dashboard and future sub-routes */}
         <Route path="dashboard" element={<DashboardLayout />}>
           <Route index element={<Dashboard />} />
-          {/* Add more dashboard sub-routes here; they render in DashboardLayout's Outlet */}
+          <Route path="patient-history" element={<PatientHistory />} />
         </Route>
         <Route path="predict" element={<Predict />} />
         <Route path="histogram" element={<Histogram />} />

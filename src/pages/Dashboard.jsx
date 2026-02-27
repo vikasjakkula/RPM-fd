@@ -1,4 +1,5 @@
-import { BarChart, TrendingUp, AlertCircle } from "lucide-react";
+import { Link } from "react-router-dom";
+import { BarChart, TrendingUp, AlertCircle, History } from "lucide-react";
 import { useMemo, useEffect, useState } from "react";
 import {
   LineChart,
@@ -135,11 +136,27 @@ const Dashboard = () => {
   return (
     <div className="dashboard-page">
       <div className="container">
-        <div className="dashboard-header">
-          <h1 className="dashboard-title">Health Dashboard</h1>
-          <p className="dashboard-subtitle">
-            Monitor your heart health metrics in real-time
-          </p>
+        <div className="dashboard-header" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
+          <div>
+            <h1 className="dashboard-title">Health Dashboard</h1>
+            <p className="dashboard-subtitle">
+              Monitor your heart health metrics in real-time
+            </p>
+          </div>
+          <Link
+            to="/dashboard/patient-history"
+            className="nav-link"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              padding: "0.5rem 1rem",
+              background: "rgba(0,0,0,0.06)",
+              borderRadius: 8,
+            }}
+          >
+            <History size={18} /> Patient History
+          </Link>
         </div>
 
         {error && (
