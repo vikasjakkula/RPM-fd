@@ -19,7 +19,7 @@ const Layout = () => {
       {showLoader && (
         <div className="page-loader">
           <div className="loader-ring"></div>
-          <p className="text-blue-400 font-medium animate-pulse">Syncing Vitals...</p>
+          <p className="text-blue-600 font-medium animate-pulse">Syncing Vitals...</p>
         </div>
       )}
 
